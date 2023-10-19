@@ -25,13 +25,15 @@ class _HomePageState extends State<HomePage> {
             onPressed: () {
               homeBloc.getMovies();
             },
-            child: Text("aa")),
+            child: Text("carregar filmes")),
         Expanded(
           child: StreamBuilder(
             stream: homeBloc.moviesStream,
             builder:
                 (BuildContext context, AsyncSnapshot<ResponseState> snapshot) {
               switch (snapshot.data?.status) {
+                case Status.LOADING:
+                  return Center(child: CircularProgressIndicator());
                 case Status.SUCCESS:
                   MovieResponse movieResponse = snapshot.data?.data;
                   List<Results> results = movieResponse.results!;
