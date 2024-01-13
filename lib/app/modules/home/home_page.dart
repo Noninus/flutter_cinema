@@ -14,46 +14,85 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final homeBloc = Modular.get<HomeBloc>();
 
+  Future<void> _pullRefresh() async {
+    homeBloc.getMovies();
+  }
+
+  @override
+  void initState() {
+    homeBloc.getMovies();
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("Filmes Populares"),
-      ),
-      body: Column(children: [
-        ElevatedButton(
-            onPressed: () {
-              homeBloc.getMovies();
-            },
-            child: Text("carregar filmes")),
-        Expanded(
-          child: StreamBuilder(
-            stream: homeBloc.moviesStream,
-            builder:
-                (BuildContext context, AsyncSnapshot<ResponseState> snapshot) {
-              switch (snapshot.data?.status) {
-                case Status.LOADING:
-                  return Center(child: CircularProgressIndicator());
-                case Status.SUCCESS:
-                  MovieResponse movieResponse = snapshot.data?.data;
-                  List<Results> results = movieResponse.results!;
-                  return ListView.builder(
-                    itemCount: results.length,
-                    itemBuilder: (BuildContext context, int index) {
-                      Results r = results[index];
-                      return ListTile(
-                          leading: Image.network(
-                              'https://image.tmdb.org/t/p/w500${r.posterPath}'),
-                          title: Text(r.title!));
-                    },
-                  );
-                default:
-                  return Container();
-              }
-            },
+    return Container(
+      color: Theme.of(context).primaryColor,
+      child: SafeArea(
+        child: Scaffold(
+          body: Column(
+            children: [
+              SizedBox(
+                  height: 50,
+                  child: Center(
+                      child: Text(
+                    "Filmes Populares",
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                        color: Theme.of(context).primaryColor),
+                  ))),
+              Expanded(
+                child: StreamBuilder(
+                  stream: homeBloc.moviesStream,
+                  builder: (BuildContext context,
+                      AsyncSnapshot<ResponseState> snapshot) {
+                    switch (snapshot.data?.status) {
+                      case Status.LOADING:
+                        return const Center(child: CircularProgressIndicator());
+                      case Status.SUCCESS:
+                        MovieResponse movieResponse = snapshot.data?.data;
+                        List<Results> results = movieResponse.results!;
+
+                        return RefreshIndicator(
+                            onRefresh: _pullRefresh,
+                            child: GridView.count(
+                              crossAxisCount: 3,
+                              childAspectRatio:
+                                  (464 / 696), // Explicar como isso funciona
+                              children: List.generate(results.length, (index) {
+                                Results r = results[index];
+                                return Padding(
+                                  padding: const EdgeInsets.all(2),
+                                  child: InkWell(
+                                    onTap: () {
+                                      Modular.to.pushNamed(
+                                          '/${r.id}'); // Explicar por que passar só ID e não objeto inteiro
+                                    },
+                                    child: Hero(
+                                      tag: "image${r.id}",
+                                      child: Card(
+                                        child: Image.network(
+                                          'https://image.tmdb.org/t/p/original${r.posterPath}',
+                                          fit: BoxFit.cover,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }),
+                            ));
+
+                      default:
+                        return Container();
+                    }
+                  },
+                ),
+              ),
+            ],
           ),
-        )
-      ]),
+        ),
+      ),
     );
   }
 }

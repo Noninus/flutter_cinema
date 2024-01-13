@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_cinema/app/shared/movie_detail.dart';
 import 'package:flutter_cinema/app/shared/movie_response.dart';
 import 'package:flutter_cinema/app/shared/response_state.dart';
 
@@ -37,6 +38,41 @@ class HomeBloc extends BlocBase {
       changeMoviesStatus(ResponseState(status: Status.SUCCESS, data: movies));
     } else {
       changeMoviesStatus(ResponseState(status: Status.ERROR));
+    }
+  }
+
+  final StreamController<ResponseState> movieDetailsController =
+      StreamController();
+
+  Stream<ResponseState> get movieDetailsStream => movieDetailsController.stream;
+
+  void changeMovieDetaisStatus(ResponseState state) {
+    if (!movieDetailsController.isClosed) {
+      movieDetailsController.sink.add(state);
+    }
+  }
+
+  getMovieDetail(String id) async {
+    changeMovieDetaisStatus(ResponseState(status: Status.LOADING));
+
+    Response response = await Dio().get(
+      'https://api.themoviedb.org/3/movie/$id',
+      queryParameters: {'language': 'pt-BR'},
+      options: Options(
+        headers: {
+          'accept': 'application/json',
+          'Authorization':
+              'Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIwMTBkNTVjNjdjYTg2NTI3YTdjY2Q0ODJmMDg3MmFiMiIsInN1YiI6IjVjZDE5MzU5MGUwYTI2MDk4MTAzMjdmYiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.0Ht5N50c4QTd6strCgZ_vRcMee0iXXBxMrZbFma-bo0'
+        },
+      ),
+    );
+
+    if (response.statusCode == 200) {
+      MovieDetail movies = MovieDetail.fromJson(response.data);
+      changeMovieDetaisStatus(
+          ResponseState(status: Status.SUCCESS, data: movies));
+    } else {
+      changeMovieDetaisStatus(ResponseState(status: Status.ERROR));
     }
   }
 }
